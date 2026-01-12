@@ -93,11 +93,11 @@
     <p>MMAC Transport & Services</p>
 
     <form id="loginForm">
-      <label for="email">Email</label>
-      <input id="email" type="email" required />
+      <label for="user">User</label>
+      <input id="user" type="text" autocomplete="username" required />
 
       <label for="password">Password</label>
-      <input id="password" type="password" required />
+      <input id="password" type="password" autocomplete="current-password" required />
 
       <button id="loginBtn" type="submit">Login</button>
     </form>
@@ -111,9 +111,9 @@
   </div>
 
 <script>
-const API_BASE = ""; 
+const API_BASE = "";
 // 如果 API 在不同 domain，例如 https://api.mmac.com
-// 就改成： const API_BASE = "https://api.mmac.com";
+// 改成： const API_BASE = "https://api.mmac.com";
 
 async function checkLogin() {
   try {
@@ -122,12 +122,9 @@ async function checkLogin() {
     });
 
     if (res.ok) {
-      // 已登录，直接进系统
       location.href = "/index.html";
     }
-  } catch (e) {
-    // ignore
-  }
+  } catch (e) {}
 }
 
 checkLogin();
@@ -148,13 +145,13 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
-        email: email.value.trim(),
+        user: user.value.trim(),
         password: password.value
       })
     });
 
     if (!res.ok) {
-      throw new Error("Invalid email or password");
+      throw new Error("Invalid user or password");
     }
 
     location.href = "/index.html";
