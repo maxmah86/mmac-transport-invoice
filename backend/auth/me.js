@@ -7,7 +7,7 @@ export async function me(request, env) {
   }
 
   const user = await env.DB.prepare(
-    `SELECT users.id, users.email, users.role
+    `SELECT users.id, users.user, users.role
      FROM sessions
      JOIN users ON users.id = sessions.user_id
      WHERE sessions.session_token = ?
