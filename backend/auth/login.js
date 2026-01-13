@@ -1,25 +1,25 @@
 export async function login(request, env) {
   const body = await request.json();
-  const { email, password } = body;
+  const { user, password } = body;
 
-  if (!email || !password) {
+  if (!user || !password) {
     return new Response("Missing credentials", { status: 400 });
   }
 
-  const user = await env.DB.prepare(
-    "SELECT * FROM users WHERE email = ?"
-  ).bind(email).first();
+  const record = await env.DB.prepare(
+    "SELECT * FROM users WHERE user = ?"
+  ).bind(user).first();
 
-  if (!user) {
-    return new Response("Invalid login", { status: 401 });
+  if (!record) {
+    return new Response("Invalid user or password", { status: 401 });
   }
 
   const enc = new TextEncoder().encode(password);
-  const hashBuf = await crypto.subtle.digest("SHA-256", enc);
-  const hash = btoa(String.fromCharCode(...new Uint8Array(hashBuf)));
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  const hash = btoa(String.fromCharCode(...new Uint8Array(buf)));
 
-  if (hash !== user.password_hash) {
-    return new Response("Invalid login", { status: 401 });
+  if (hash !== record.password_hash) {
+    return new Response("Invalid user or password", { status: 401 });
   }
 
   const token = crypto.randomUUID();
@@ -28,14 +28,17 @@ export async function login(request, env) {
   await env.DB.prepare(
     `INSERT INTO sessions (user_id, session_token, expires_at)
      VALUES (?, ?, ?)`
-  ).bind(user.id, token, expires.toISOString()).run();
+  ).bind(record.id, token, expires.toISOString()).run();
+
+  const isHttps = request.headers.get("x-forwarded-proto") === "https";
 
   return new Response(
     JSON.stringify({ success: true }),
     {
       headers: {
         "Set-Cookie":
-          `mmac_session=${token}; HttpOnly; Secure; Path=/; Max-Age=604800`,
+          `mmac_session=${token}; HttpOnly; Path=/; Max-Age=604800` +
+          (isHttps ? "; Secure" : ""),
         "Content-Type": "application/json"
       }
     }
