@@ -1,38 +1,43 @@
-import { login } from "./auth/login";
-import { logout } from "./auth/logout";
-import { me } from "./auth/me";
-import { requireAuth } from "./auth/requireAuth";
+import { login } from "./auth/login.js";
+import { me } from "./auth/me.js";
+import { logout } from "./auth/logout.js";
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const { pathname } = url;
+    const method = request.method;
 
-    // ===== Public =====
-    if (request.method === "POST" && url.pathname === "/api/login") {
+    // 只处理 /api/*
+    if (!pathname.startsWith("/api/")) {
+      return new Response("Not Found", { status: 404 });
+    }
+
+    // ---- LOGIN ----
+    if (pathname === "/api/login") {
+      if (method !== "POST") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
       return login(request, env);
     }
 
-    if (request.method === "POST" && url.pathname === "/api/logout") {
-      return logout(request, env);
-    }
-
-    if (request.method === "GET" && url.pathname === "/api/me") {
+    // ---- ME ----
+    if (pathname === "/api/me") {
+      if (method !== "GET") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
       return me(request, env);
     }
 
-    // ===== Protected =====
-    const user = await requireAuth(request, env);
-    if (!user) {
-      return new Response("Unauthorized", { status: 401 });
+    // ---- LOGOUT ----
+    if (pathname === "/api/logout") {
+      if (method !== "POST") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+      return logout(request, env);
     }
 
-    // 示例
-    if (url.pathname === "/api/ping") {
-      return new Response(JSON.stringify({ ok: true, user }), {
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
+    // ---- UNKNOWN API ----
     return new Response("Not Found", { status: 404 });
   }
 };
