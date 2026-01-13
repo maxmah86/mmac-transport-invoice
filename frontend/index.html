@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MMAC Invoice Dashboard</title>
+  <title>MMAC Invoice · System Status</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -19,32 +19,8 @@
       background: #1a73e8;
       color: #fff;
       padding: 14px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    header .title {
       font-size: 16px;
       font-weight: 600;
-    }
-
-    header .user {
-      font-size: 13px;
-    }
-
-    button {
-      padding: 6px 10px;
-      font-size: 13px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .logout {
-      background: #fff;
-      color: #1a73e8;
-      margin-left: 8px;
     }
 
     main {
@@ -60,29 +36,28 @@
     }
 
     .card h2 {
-      margin: 0 0 8px;
+      margin: 0 0 12px;
       font-size: 16px;
     }
 
-    nav a {
-      display: inline-block;
-      margin-right: 12px;
+    .status {
       font-size: 14px;
-      color: #1a73e8;
-      text-decoration: none;
+      margin: 6px 0;
     }
 
-    nav a:hover {
-      text-decoration: underline;
+    .ok {
+      color: #2e7d32;
+      font-weight: 600;
     }
 
-    .status-ok { color: #2e7d32; }
-    .status-bad { color: #c62828; }
+    .bad {
+      color: #c62828;
+      font-weight: 600;
+    }
 
-    .loading {
-      padding: 40px;
-      text-align: center;
-      color: #666;
+    .warn {
+      color: #ef6c00;
+      font-weight: 600;
     }
 
     .footer {
@@ -97,89 +72,66 @@
 <body>
 
 <header>
-  <div class="title">MMAC Invoice Dashboard</div>
-  <div class="user">
-    <span id="userInfo">Checking session…</span>
-    <button class="logout" id="logoutBtn" disabled>Logout</button>
-  </div>
+  MMAC Invoice · System Diagnostic
 </header>
 
-<main id="app">
-  <div class="loading">
-    Loading dashboard…
+<main>
+
+  <div class="card">
+    <h2>Frontend (Cloudflare Pages)</h2>
+    <div class="status ok">OK – index.html loaded</div>
   </div>
+
+  <div class="card">
+    <h2>Backend API Status</h2>
+
+    <div id="api-login" class="status">/api/login : checking…</div>
+    <div id="api-me" class="status">/api/me : checking…</div>
+    <div id="api-logout" class="status">/api/logout : checking…</div>
+  </div>
+
+  <div class="card">
+    <h2>Notes</h2>
+    <ul>
+      <li>This page does <strong>not</strong> enforce login.</li>
+      <li>No redirect will occur even if APIs fail.</li>
+      <li>Used for system setup and debugging.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    © MMAC Transport & Services<br />
+    SSM: 003531849-V
+  </div>
+
 </main>
 
-<script type="module">
-  import { requireLogin, logout } from "./assets/js/auth.js";
+<script>
+async function checkApi(path, elId, options = {}) {
+  const el = document.getElementById(elId);
 
-  const app = document.getElementById("app");
-  const userInfo = document.getElementById("userInfo");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  // 1️⃣ 强制登录（唯一入口）
-  const user = await requireLogin();
-
-  if (!user) {
-    // requireLogin 已处理 redirect
-    // 这里什么都不做，避免二次跳转
-    app.innerHTML = `
-      <div class="loading">
-        Redirecting to login…
-      </div>
-    `;
-    throw new Error("Not logged in");
-  }
-
-  // 2️⃣ 登录成功，初始化 UI
-  userInfo.textContent = `${user.user} (${user.role})`;
-  logoutBtn.disabled = false;
-  logoutBtn.onclick = logout;
-
-  // 3️⃣ 渲染 Dashboard（正式内容）
-  app.innerHTML = `
-    <div class="card">
-      <h2>Welcome</h2>
-      <p>
-        This is the MMAC internal invoice system.<br />
-        You are successfully logged in.
-      </p>
-    </div>
-
-    <div class="card">
-      <h2>Navigation</h2>
-      <nav>
-        <a href="#">Invoices</a>
-        <a href="#">Quotations</a>
-        <a href="#">Statements</a>
-      </nav>
-    </div>
-
-    <div class="card">
-      <h2>System Status</h2>
-      <p id="apiStatus">Checking API…</p>
-    </div>
-
-    <div class="footer">
-      © MMAC Transport & Services<br />
-      SSM: 003531849-V
-    </div>
-  `;
-
-  // 4️⃣ API 健康检查（不影响登录逻辑）
   try {
-    const res = await fetch("/api/me", { credentials: "include" });
-    const el = document.getElementById("apiStatus");
+    const res = await fetch(path, {
+      credentials: "include",
+      ...options
+    });
 
     if (res.ok) {
-      el.innerHTML = `Backend API: <strong class="status-ok">OK</strong>`;
+      el.innerHTML = `${path} : <span class="ok">OK (${res.status})</span>`;
+    } else if (res.status === 401) {
+      el.innerHTML = `${path} : <span class="warn">Unauthorized (401)</span>`;
     } else {
-      el.innerHTML = `Backend API: <strong class="status-bad">Error</strong>`;
+      el.innerHTML = `${path} : <span class="bad">Error (${res.status})</span>`;
     }
-  } catch {
-    document.getElementById("apiStatus").innerHTML =
-      `Backend API: <strong class="status-bad">Unreachable</strong>`;
+  } catch (e) {
+    el.innerHTML = `${path} : <span class="bad">Unreachable</span>`;
   }
+}
+
+// 检查各 API
+checkApi("/api/login", "api-login", { method: "POST" });
+checkApi("/api/me", "api-me");
+checkApi("/api/logout", "api-logout", { method: "POST" });
 </script>
 
 </body>
