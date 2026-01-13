@@ -1,24 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Dashboard</title>
+  <meta charset="UTF-8" />
+  <title>MMAC Invoice System · Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f8;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .box {
+      width: 100%;
+      max-width: 360px;
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.1);
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-size: 13px;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border: none;
+      border-radius: 4px;
+      background: #1a73e8;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #9bbcf3;
+      cursor: not-allowed;
+    }
+
+    .msg {
+      margin-top: 12px;
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
+
+    .error { color: #c62828; }
+    .ok { color: #2e7d32; }
+
+    .footer {
+      margin-top: 18px;
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
-<h1>Dashboard</h1>
-<p id="userInfo"></p>
-<button onclick="logout()">Logout</button>
+<div class="box">
+  <h1>MMAC Invoice</h1>
+  <div class="subtitle">MMAC Transport & Services</div>
 
-<script type="module">
-  import { requireLogin, logout } from "./assets/js/auth.js";
+  <form id="loginForm">
+    <label for="user">User</label>
+    <input id="user" type="text" autocomplete="username" required />
 
-  const user = await requireLogin();
-  if (user) {
-    document.getElementById("userInfo").innerText =
-      `Logged in as: ${user.user} (${user.role})`;
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" required />
+
+    <button id="btn" type="submit">Login</button>
+  </form>
+
+  <div id="msg" class="msg"></div>
+
+  <div class="footer">
+    © MMAC Transport & Services<br>
+    SSM: 003531849-V
+  </div>
+</div>
+
+<script>
+const API_BASE = ""; // 同域；若子域 API 再改
+
+const msg = document.getElementById("msg");
+const btn = document.getElementById("btn");
+
+function showMessage(text, type) {
+  msg.className = "msg " + type;
+  msg.innerText = text;
+  msg.style.display = "block";
+}
+
+async function checkSession() {
+  try {
+    const res = await fetch(API_BASE + "/api/me", {
+      credentials: "include"
+    });
+
+    if (res.ok) {
+      // 已登录，不再停在 login
+      location.href = "/index.html";
+    }
+  } catch (e) {
+    // API 不通时，不做任何事，让用户手动登录
   }
+}
 
-  window.logout = logout;
+checkSession();
+
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  msg.style.display = "none";
+  btn.disabled = true;
+  btn.innerText = "Logging in...";
+
+  try {
+    const res = await fetch(API_BASE + "/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        user: user.value.trim(),
+        password: password.value
+      })
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        throw new Error("Invalid user or password");
+      }
+      throw new Error("Login service not available");
+    }
+
+    showMessage("Login successful, redirecting…", "ok");
+
+    setTimeout(() => {
+      location.href = "/index.html";
+    }, 500);
+
+  } catch (err) {
+    showMessage(err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Login";
+  }
+});
 </script>
 
 </body>
