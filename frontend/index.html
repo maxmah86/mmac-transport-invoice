@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MMAC Invoice · Dashboard</title>
+  <title>MMAC Invoice Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -18,33 +18,9 @@
     header {
       background: #1a73e8;
       color: #fff;
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    header .title {
+      padding: 14px 16px;
       font-size: 16px;
       font-weight: 600;
-    }
-
-    header .user {
-      font-size: 13px;
-    }
-
-    button {
-      padding: 6px 10px;
-      font-size: 13px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .logout {
-      background: #fff;
-      color: #1a73e8;
-      margin-left: 8px;
     }
 
     main {
@@ -64,13 +40,6 @@
       font-size: 16px;
     }
 
-    .status {
-      font-size: 13px;
-    }
-
-    .ok { color: #2e7d32; }
-    .bad { color: #c62828; }
-
     nav a {
       display: inline-block;
       margin-right: 12px;
@@ -82,30 +51,35 @@
     nav a:hover {
       text-decoration: underline;
     }
+
+    .footer {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+    }
   </style>
 </head>
 
 <body>
 
 <header>
-  <div class="title">MMAC Invoice Dashboard</div>
-  <div class="user">
-    <span id="userInfo">Loading…</span>
-    <button class="logout" id="logoutBtn">Logout</button>
-  </div>
+  MMAC Invoice Dashboard
 </header>
 
 <main>
 
   <div class="card">
-    <h2>System Status</h2>
-    <div id="apiStatus" class="status">Checking API…</div>
+    <h2>Welcome</h2>
+    <p>
+      This is the MMAC internal invoice system dashboard.<br>
+      Authentication is currently disabled for debugging and setup.
+    </p>
   </div>
 
   <div class="card">
     <h2>Navigation</h2>
     <nav>
-      <!-- 下面这些页面你之后慢慢做 -->
       <a href="#">Invoices</a>
       <a href="#">Quotations</a>
       <a href="#">Statements</a>
@@ -113,47 +87,19 @@
   </div>
 
   <div class="card">
-    <h2>Welcome</h2>
+    <h2>Status</h2>
     <p>
-      This is the MMAC internal invoice system.<br>
-      Use the navigation above to manage invoices and statements.
+      Frontend (Cloudflare Pages): <strong>OK</strong><br>
+      Backend / API: <strong>Not checked</strong>
     </p>
   </div>
 
+  <div class="footer">
+    © MMAC Transport & Services<br />
+    SSM: 003531849-V
+  </div>
+
 </main>
-
-<script type="module">
-  import { requireLogin, logout } from "./assets/js/auth.js";
-
-  const userInfo = document.getElementById("userInfo");
-  const apiStatus = document.getElementById("apiStatus");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  // 1️⃣ 强制登录
-  const user = await requireLogin();
-
-  if (user) {
-    userInfo.innerText = `${user.user} (${user.role})`;
-  }
-
-  // 2️⃣ API 健康检查（非常有用）
-  try {
-    const res = await fetch("/api/ping", { credentials: "include" });
-    if (res.ok) {
-      apiStatus.innerText = "API connected";
-      apiStatus.className = "status ok";
-    } else {
-      apiStatus.innerText = "API error";
-      apiStatus.className = "status bad";
-    }
-  } catch (e) {
-    apiStatus.innerText = "API unreachable";
-    apiStatus.className = "status bad";
-  }
-
-  // 3️⃣ Logout
-  logoutBtn.addEventListener("click", logout);
-</script>
 
 </body>
 </html>
