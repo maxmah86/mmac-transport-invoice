@@ -19,17 +19,15 @@ export default {
       return me(request, env);
     }
 
-    // ===== Protected APIs =====
     const user = await requireAuth(request, env);
     if (!user) {
       return new Response("Unauthorized", { status: 401 });
     }
 
     if (url.pathname === "/api/ping") {
-      return new Response(
-        JSON.stringify({ ok: true, user }),
-        { headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ ok: true, user }), {
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     return new Response("Not Found", { status: 404 });
