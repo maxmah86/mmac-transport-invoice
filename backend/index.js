@@ -7,6 +7,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // ===== Public =====
     if (request.method === "POST" && url.pathname === "/api/login") {
       return login(request, env);
     }
@@ -19,11 +20,13 @@ export default {
       return me(request, env);
     }
 
+    // ===== Protected =====
     const user = await requireAuth(request, env);
     if (!user) {
       return new Response("Unauthorized", { status: 401 });
     }
 
+    // 示例
     if (url.pathname === "/api/ping") {
       return new Response(JSON.stringify({ ok: true, user }), {
         headers: { "Content-Type": "application/json" }
