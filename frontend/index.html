@@ -19,8 +19,32 @@
       background: #1a73e8;
       color: #fff;
       padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header .title {
       font-size: 16px;
       font-weight: 600;
+    }
+
+    header .user {
+      font-size: 13px;
+    }
+
+    button {
+      padding: 6px 10px;
+      font-size: 13px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .logout {
+      background: #fff;
+      color: #1a73e8;
+      margin-left: 8px;
     }
 
     main {
@@ -52,6 +76,15 @@
       text-decoration: underline;
     }
 
+    .status-ok { color: #2e7d32; }
+    .status-bad { color: #c62828; }
+
+    .loading {
+      padding: 40px;
+      text-align: center;
+      color: #666;
+    }
+
     .footer {
       margin-top: 24px;
       font-size: 12px;
@@ -64,42 +97,90 @@
 <body>
 
 <header>
-  MMAC Invoice Dashboard
+  <div class="title">MMAC Invoice Dashboard</div>
+  <div class="user">
+    <span id="userInfo">Checking session…</span>
+    <button class="logout" id="logoutBtn" disabled>Logout</button>
+  </div>
 </header>
 
-<main>
-
-  <div class="card">
-    <h2>Welcome</h2>
-    <p>
-      This is the MMAC internal invoice system dashboard.<br>
-      Authentication is currently disabled for debugging and setup.
-    </p>
+<main id="app">
+  <div class="loading">
+    Loading dashboard…
   </div>
-
-  <div class="card">
-    <h2>Navigation</h2>
-    <nav>
-      <a href="#">Invoices</a>
-      <a href="#">Quotations</a>
-      <a href="#">Statements</a>
-    </nav>
-  </div>
-
-  <div class="card">
-    <h2>Status</h2>
-    <p>
-      Frontend (Cloudflare Pages): <strong>OK</strong><br>
-      Backend / API: <strong>Not checked</strong>
-    </p>
-  </div>
-
-  <div class="footer">
-    © MMAC Transport & Services<br />
-    SSM: 003531849-V
-  </div>
-
 </main>
+
+<script type="module">
+  import { requireLogin, logout } from "./assets/js/auth.js";
+
+  const app = document.getElementById("app");
+  const userInfo = document.getElementById("userInfo");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  // 1️⃣ 强制登录（唯一入口）
+  const user = await requireLogin();
+
+  if (!user) {
+    // requireLogin 已处理 redirect
+    // 这里什么都不做，避免二次跳转
+    app.innerHTML = `
+      <div class="loading">
+        Redirecting to login…
+      </div>
+    `;
+    throw new Error("Not logged in");
+  }
+
+  // 2️⃣ 登录成功，初始化 UI
+  userInfo.textContent = `${user.user} (${user.role})`;
+  logoutBtn.disabled = false;
+  logoutBtn.onclick = logout;
+
+  // 3️⃣ 渲染 Dashboard（正式内容）
+  app.innerHTML = `
+    <div class="card">
+      <h2>Welcome</h2>
+      <p>
+        This is the MMAC internal invoice system.<br />
+        You are successfully logged in.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Navigation</h2>
+      <nav>
+        <a href="#">Invoices</a>
+        <a href="#">Quotations</a>
+        <a href="#">Statements</a>
+      </nav>
+    </div>
+
+    <div class="card">
+      <h2>System Status</h2>
+      <p id="apiStatus">Checking API…</p>
+    </div>
+
+    <div class="footer">
+      © MMAC Transport & Services<br />
+      SSM: 003531849-V
+    </div>
+  `;
+
+  // 4️⃣ API 健康检查（不影响登录逻辑）
+  try {
+    const res = await fetch("/api/me", { credentials: "include" });
+    const el = document.getElementById("apiStatus");
+
+    if (res.ok) {
+      el.innerHTML = `Backend API: <strong class="status-ok">OK</strong>`;
+    } else {
+      el.innerHTML = `Backend API: <strong class="status-bad">Error</strong>`;
+    }
+  } catch {
+    document.getElementById("apiStatus").innerHTML =
+      `Backend API: <strong class="status-bad">Unreachable</strong>`;
+  }
+</script>
 
 </body>
 </html>
