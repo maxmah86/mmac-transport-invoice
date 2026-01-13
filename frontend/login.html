@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MMAC Invoice System · Login</title>
+  <title>MMAC Invoice · Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -10,9 +10,9 @@
 
     body {
       margin: 0;
+      height: 100vh;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #f4f6f8;
-      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -28,39 +28,40 @@
     }
 
     h1 {
-      margin: 0 0 4px;
+      margin: 0;
       font-size: 20px;
       text-align: center;
     }
 
     .subtitle {
-      text-align: center;
+      margin-top: 4px;
       font-size: 13px;
       color: #666;
-      margin-bottom: 20px;
+      text-align: center;
     }
 
     label {
-      font-size: 13px;
-      margin-bottom: 4px;
       display: block;
+      margin-top: 14px;
+      font-size: 13px;
     }
 
     input {
       width: 100%;
+      margin-top: 4px;
       padding: 10px;
       font-size: 14px;
-      border: 1px solid #ccc;
       border-radius: 4px;
-      margin-bottom: 14px;
+      border: 1px solid #ccc;
     }
 
     button {
+      margin-top: 18px;
       width: 100%;
       padding: 10px;
       font-size: 15px;
-      border: none;
       border-radius: 4px;
+      border: none;
       background: #1a73e8;
       color: #fff;
       cursor: pointer;
@@ -72,7 +73,7 @@
     }
 
     .msg {
-      margin-top: 12px;
+      margin-top: 14px;
       font-size: 13px;
       text-align: center;
       display: none;
@@ -96,11 +97,11 @@
   <div class="subtitle">MMAC Transport & Services</div>
 
   <form id="loginForm">
-    <label for="user">User</label>
-    <input id="user" type="text" autocomplete="username" required />
+    <label>User</label>
+    <input id="user" type="text" required autocomplete="username" />
 
-    <label for="password">Password</label>
-    <input id="password" type="password" autocomplete="current-password" required />
+    <label>Password</label>
+    <input id="password" type="password" required autocomplete="current-password" />
 
     <button id="btn" type="submit">Login</button>
   </form>
@@ -108,46 +109,48 @@
   <div id="msg" class="msg"></div>
 
   <div class="footer">
-    © MMAC Transport & Services<br>
+    © MMAC Transport & Services<br />
     SSM: 003531849-V
   </div>
 </div>
 
 <script>
-const API_BASE = ""; // 同域；若子域 API 再改
+const API_BASE = ""; // 同域 API
 
-const msg = document.getElementById("msg");
+const form = document.getElementById("loginForm");
 const btn = document.getElementById("btn");
+const msg = document.getElementById("msg");
 
-function showMessage(text, type) {
+function show(text, type) {
+  msg.textContent = text;
   msg.className = "msg " + type;
-  msg.innerText = text;
   msg.style.display = "block";
 }
 
-async function checkSession() {
+// 1️⃣ 页面加载时：检查是否已有 session
+(async function checkSession() {
   try {
     const res = await fetch(API_BASE + "/api/me", {
       credentials: "include"
     });
 
     if (res.ok) {
-      // 已登录，不再停在 login
-      location.href = "/index.html";
+      // 已登录，直接进 dashboard
+      location.replace("/index.html");
     }
-  } catch (e) {
-    // API 不通时，不做任何事，让用户手动登录
+    // 401 / 其他：留在 login
+  } catch {
+    // API 不通：留在 login
   }
-}
+})();
 
-checkSession();
-
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
+// 2️⃣ 提交登录
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   msg.style.display = "none";
   btn.disabled = true;
-  btn.innerText = "Logging in...";
+  btn.textContent = "Logging in...";
 
   try {
     const res = await fetch(API_BASE + "/api/login", {
@@ -162,22 +165,33 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
     if (!res.ok) {
       if (res.status === 401) {
-        throw new Error("Invalid user or password");
+        show("Invalid user or password", "error");
+      } else {
+        show("Login service error", "error");
       }
-      throw new Error("Login service not available");
+      return;
     }
 
-    showMessage("Login successful, redirecting…", "ok");
+    // 登录成功，再确认一次 session
+    const check = await fetch(API_BASE + "/api/me", {
+      credentials: "include"
+    });
 
+    if (!check.ok) {
+      show("Login failed: session not established", "error");
+      return;
+    }
+
+    show("Login successful, redirecting…", "ok");
     setTimeout(() => {
-      location.href = "/index.html";
-    }, 500);
+      location.replace("/index.html");
+    }, 400);
 
   } catch (err) {
-    showMessage(err.message, "error");
+    show("Network or server error", "error");
   } finally {
     btn.disabled = false;
-    btn.innerText = "Login";
+    btn.textContent = "Login";
   }
 });
 </script>
